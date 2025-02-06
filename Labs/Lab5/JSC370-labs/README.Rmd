@@ -290,9 +290,30 @@ Start by computing the states' average temperature. Use that measurement to clas
 - High: temp >= 25
 
 ```{r}
+#get average tempreature for each state
+state_avg_temp <- met[, .(
+  avg_temp = mean(temp, na.rm = TRUE)
+), by = STATE]
 
+#classify them
+state_avg_temp[, temp_level := fifelse(avg_temp < 20, "Low",
+                               fifelse(avg_temp >= 20 & avg_temp < 25, "Mid", "High"))]
+
+state_avg_temp
 ```
 
+```{r}
+met2 <- merge(met, state_avg_temp[, .(STATE, temp_level)], by = "STATE", all.x = TRUE)
+
+summary_table <- met2[, .(
+  num_states = uniqueN(STATE),  
+  avg_temp = mean(temp, na.rm = TRUE),  
+  avg_wind_sp = mean(wind.sp, na.rm = TRUE),  
+  avg_atm_press = mean(atm.press, na.rm = TRUE)  
+), by = temp_level]
+
+summary_table
+```
 Once you are done with that, you can compute the following:
 
 - Number of entries (records),
@@ -304,7 +325,17 @@ Once you are done with that, you can compute the following:
 All by the levels described before.
 
 ```{r}
+summary_stats <- met2[, .(
+  num_entries = .N,  
+  num_na_entries = sum(is.na(temp) | is.na(wind.sp) | is.na(atm.press)), 
+  num_stations = uniqueN(USAFID), 
+  num_states = uniqueN(STATE), 
+  avg_temp = mean(temp, na.rm = TRUE),  
+  avg_wind_sp = mean(wind.sp, na.rm = TRUE),  
+  avg_atm_press = mean(atm.press, na.rm = TRUE)  
+), by = temp_level]
 
+summary_stats
 ```
 
 Knit the document, commit your changes, and push them to GitHub. 
